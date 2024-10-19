@@ -3,6 +3,11 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import validator from 'validator'
 
+// create the token 
+const craeteToken = (id) => {
+    return jwt.sign({id}, process.env.JWT_SECRET)
+}
+
 
 // create register user
 const registerUser = async (req, res) => {
@@ -49,21 +54,63 @@ const registerUser = async (req, res) => {
 
         // save the new user in database
         const user = await newUser.save();
+        const token = craeteToken(user._id);
 
+        res.json({
+            success: true,
+            token
+        });
 
 
     } catch (error) {
-        
+        console.log(error);
+        res.json({
+            success: false,
+            message: "Error"
+        })
     }
 }
 
 
 // create the login user
 const loginUser = async (req, res) =>{
+    const { email, password } = req.body;
 
+    try {
+        const user = await userModel.findOne({email});
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: "User doesn't exist" 
+            })
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password)
+        // password jo user ne enter kiya or user.password vo h jo register krte time dala tha
+
+
+        if (!isMatch) {
+            return res.json({
+                success: false,
+                message: "Invalid credentials"
+            })
+        }
+
+        const token = craeteToken(user._id);
+        res.json({
+            success: true,
+            token
+        })
+
+    } catch (error) {
+        console.log(error);
+        res.json({
+            success: false,
+            message: "Error"
+        })
+    }
 }
-
-
 
 export {
     loginUser,
